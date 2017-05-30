@@ -3,13 +3,69 @@
     var SOX_SETTINGS = 'SOXSETTINGS';
     var commonInfo = JSON.parse(GM_getResourceText('common'));
 
-    var Stack = (typeof StackExchange === "undefined" ? window.eval('StackExchange') : StackExchange);
-    var Chat = (typeof CHAT === "undefined" ? undefined : CHAT);
-
     sox.info = {
         version: (typeof GM_info !== 'undefined' ? GM_info.script.version : 'unknown'),
         handler: (typeof GM_info !== 'undefined' ? GM_info.scriptHandler : 'unknown'),
-        apikey: 'lL1S1jr2m*DRwOvXMPp26g(('
+        apikey: 'lL1S1jr2m*DRwOvXMPp26g((',
+        debugging: GM_getValue('SOX-debug', false)
+    };
+
+    sox.NEW_TOPBAR = !!$('.js-so-header').length;
+
+    sox.debug = function() {
+        if (!sox.info.debugging) return;
+        for (var arg = 0; arg < arguments.length; ++arg) {
+            console.debug('SOX: ', arguments[arg]);
+        }
+    };
+
+    sox.log = function() {
+        for (var arg = 0; arg < arguments.length; ++arg) {
+            console.log('SOX: ', arguments[arg]);
+        }
+    };
+
+    sox.warn = function() {
+        for (var arg = 0; arg < arguments.length; ++arg) {
+            console.warn('SOX: ', arguments[arg]);
+        }
+    };
+
+    sox.error = function() {
+        for (var arg = 0; arg < arguments.length; ++arg) {
+            console.error('SOX: ', arguments[arg]);
+        }
+    };
+
+    sox.loginfo = function() {
+        for (var arg = 0; arg < arguments.length; ++arg) {
+            console.info('SOX: ', arguments[arg]);
+        }
+    };
+
+    //var Stack = (typeof StackExchange === "undefined" ? window.eval('if (typeof StackExchange != "undefined") StackExchange') : StackExchange) | undefined;
+    var Chat, Stack;
+    if (location.href.indexOf('github.com') === -1) { //need this so it works on FF -- CSP blocks window.eval() it seems
+        Chat = (typeof CHAT === "undefined" ? window.eval("typeof CHAT != 'undefined' ? CHAT : undefined") : CHAT);
+        sox.debug(Chat);
+        Stack = (typeof Chat === "undefined" ? (typeof StackExchange === "undefined" ? window.eval('if (typeof StackExchange != "undefined") StackExchange') : StackExchange) : undefined);
+        sox.debug(Stack);
+    }
+
+    sox.Stack = Stack;
+
+    sox.exists = function(path) {
+        if (!Stack) return false;
+        var toCheck = path.split('.'),
+            cont = true,
+            o = Stack,
+            i;
+        for (i = 0; i < toCheck.length; i++) {
+            if (!cont) return false;
+            if (!(toCheck[i] in o)) cont = false;
+            o = o[toCheck[i]];
+        }
+        return cont;
     };
 
     sox.ready = function(func) {
@@ -37,67 +93,85 @@
         },
         reset: function() {
             var keys = GM_listValues();
-            for (i = 0; i < keys.length; i++) {
+            sox.debug(keys);
+            for (var i = 0; i < keys.length; i++) {
                 var key = keys[i];
                 GM_deleteValue(key);
             }
         },
         get accessToken() {
-            console.log('SOX Access Token: ' + (GM_getValue('SOX-accessToken', false) === false ? 'NOT SET' : 'SET'));
+            sox.debug('SOX Access Token: ' + (GM_getValue('SOX-accessToken', false) === false ? 'NOT SET' : 'SET'));
             return GM_getValue('SOX-accessToken', false);
         },
-        writeToConsole: function() {
-            console.log('logging sox stored values --- ');
+        writeToConsole: function(hideAccessToken) {
+            sox.loginfo('logging sox stored values --- ');
             var keys = GM_listValues();
-            for (i = 0; i < keys.length; i++) {
+            for (var i = 0; i < keys.length; i++) {
                 var key = keys[i];
-                console.log(key, GM_getValue(key));
+                if (hideAccessToken && key == 'SOX-accessToken') {
+                    sox.loginfo('access token set');
+                } else {
+                    sox.loginfo(key, GM_getValue(key));
+                }
             }
         }
     };
 
     sox.helpers = {
-        notify: function(message) {
-            // eg: sox.helpers.notify('message one', 'message two');
-            for (var arg = 0; arg < arguments.length; ++arg) {
-                console.log('SOX: ', arguments[arg]);
-            }
-        },
-        getFromAPI: function(type, id, sitename, callback, sortby) {
-            console.log('Getting From API with URL: https://api.stackexchange.com/2.2/' + type + '/' + id + '?order=desc&sort=' + (sortby || 'creation') + '&site=' + sitename + '&key=' + sox.info.apikey + '&access_token=' + sox.settings.accessToken);
+        getFromAPI: function(type, id, sitename, callback, sortby, asyncYesNo) {
+            sox.debug('Getting From API with URL: https://api.stackexchange.com/2.2/' + type + '/' + id + '?order=desc&sort=' + (sortby || 'creation') + '&site=' + sitename + '&key=' + sox.info.apikey + '&access_token=' + sox.settings.accessToken);
             $.ajax({
                 type: 'get',
+                async: (typeof asyncYesNo === 'undefined' ? true : false),
                 url: 'https://api.stackexchange.com/2.2/' + type + '/' + id + '?order=desc&sort=' + (sortby || 'creation') + '&site=' + sitename + '&key=' + sox.info.apikey + '&access_token=' + sox.settings.accessToken,
                 success: function(d) {
-                    if(d.backoff) {
-                        console.log('SOX Error: BACKOFF: ' + d.backoff);
+                    if (d.backoff) {
+                        sox.error('SOX Error: BACKOFF: ' + d.backoff);
+                    } else if (d.error_id == 502) {
+                        sox.error('THROTTLE VIOLATION', d);
+                    } else if (d.error_id == 403)  {
+                        sox.warn('Access token invalid! Opening window to get new one');
+                        window.open('https://stackexchange.com/oauth/dialog?client_id=7138&scope=no_expiry&redirect_uri=http://soscripted.github.io/sox/');
+                        alert('Your access token is no longer valid. A window has been opened to request a new one.');
                     } else {
                         callback(d);
                     }
                 },
                 error: function(a, b, c) {
-                    console.log('SOX Error: ' + b + ' ' + c);
+                    sox.error('SOX Error: ' + b + ' ' + c);
                 }
             });
         },
         observe: function(elements, callback, toObserve) {
-            console.log('observe: ' + elements);
-            new MutationObserver(function(mutations, observer) {
+            sox.debug('observe: ' + elements);
+            var observer = new MutationObserver(function(mutations, observer) {
                 for (var i = 0; i < mutations.length; i++) {
-                    for (var j = 0; j < mutations[i].addedNodes.length; j++) {
-                        var $o = $(mutations[i].addedNodes[j]);
-                        if ($o && $o.is((Array.isArray(elements) ? elements.join(',') : elements))) {
-                            callback(mutations[i].addedNodes[j]);
-                            console.log('fire: ' + elements);
-                        }
+                    //sox.debug($(mutations[i].target));
+                    if ($(mutations[i].target).is(elements)) {
+                        callback(mutations[i].target);
+                        sox.debug('fire: target: ', mutations[i].target);
+                        return;
                     }
                 }
-            }).observe(toObserve || document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                characterData: true
             });
+
+            if (toObserve) {
+                for (var i = 0; i < toObserve.length; i++) { //could be multiple elements with querySelectorAll
+                    observer.observe(toObserve[i], {
+                        attributes: true,
+                        childList: true,
+                        characterData: true,
+                        subtree: true
+                    });
+                }
+            } else {
+                observer.observe(document.body, {
+                    attributes: true,
+                    childList: true,
+                    characterData: true,
+                    subtree: true
+                });
+            }
         },
         newElement: function(type, elementDetails) {
             var extras = {},
@@ -135,12 +209,12 @@
             chat: 'chat',
             beta: 'beta'
         },
-        id: Stack ? Stack.options.site.id : undefined,
+        id: (sox.exists('options.site.id') ? Stack.options.site.id : undefined),
         get name() {
             if (Chat) {
                 return $('#footer-logo a').attr('title');
-            } else if (Stack) {
-                return Stack.options.site.name;
+            } else { //using StackExchange object doesn't give correct name (eg. `Biology` is called `Biology Stack Exchange` in the object)
+                return $('.js-topbar-dialog-corral .modal-content.current-site-container .current-site-link div').attr('title');
             }
             return undefined;
         },
@@ -149,7 +223,7 @@
             if (Chat) {
                 return this.types.chat;
             } else if (Stack) {
-                if (Stack.options.site.isMetaSite) {
+                if (sox.exists('options.site') && Stack.options.site.isMetaSite) {
                     return this.types.meta;
                 } else {
                     // check if site is in beta or graduated
@@ -164,6 +238,8 @@
         apiParameter: function(siteName) {
             if (commonInfo.apiParameters.hasOwnProperty(siteName)) {
                 return commonInfo.apiParameters[siteName];
+            } else if (sox.location.on('area51')) {
+                return 'area51';
             }
         },
         metaApiParameter: function(siteName) {
@@ -172,7 +248,7 @@
             }
         },
         get currentApiParameter() {
-            return this.apiParameter(this.name);
+            return this.apiParameter(this.name || (location.href.indexOf('stackapps.com/') > -1 ? "Stack Apps" : undefined));
         },
         get icon() {
             return "favicon-" + $(".current-site a:not([href*='meta']) .site-icon").attr('class').split('favicon-')[1];
@@ -192,7 +268,15 @@
         get onQuestion() {
             return this.on('/questions/');
         },
-        match: function(pattern, urlToMatchWith) { //commented version @ https://jsfiddle.net/shub01/t90kx2dv/
+        matchWithPattern: function(pattern, urlToMatchWith) { //commented version @ https://jsfiddle.net/shub01/t90kx2dv/
+            if (pattern == 'SE1.0') { //SE.com && Area51.SE.com special checking
+                if (urlToMatchWith) {
+                    if (urlToMatchWith.match(/https?:\/\/stackexchange\.com\/?/) || sox.location.matchWithPattern('*://area51.stackexchange.com/*')) return true;
+                } else {
+                    if (location.href.match(/https?:\/\/stackexchange\.com\/?/) || sox.location.matchWithPattern('*://area51.stackexchange.com/*')) return true;
+                }
+                return false;
+            }
             var currentSiteScheme, currentSiteHost, currentSitePath;
             if (urlToMatchWith) {
                 var split = urlToMatchWith.split('/');
@@ -226,25 +310,26 @@
             if (sox.site.type == sox.site.types.chat) {
                 return Chat ? Chat.RoomUsers.current().id : undefined;
             } else {
-                return Stack ? Stack.options.user.userId : undefined;
+                return sox.exists('options.user.userId') ? Stack.options.user.userId : undefined;
             }
         },
         get rep() {
             if (sox.site.type == sox.site.types.chat) {
                 return Chat.RoomUsers.current().reputation;
             } else {
-                return Stack ? Stack.options.user.rep : undefined;
+                return sox.exists('options.user.rep') ? Stack.options.user.rep : undefined;
             }
         },
         get name() {
             if (sox.site.type == sox.site.types.chat) {
                 return Chat.RoomUsers.current().name;
             } else {
-                return Stack && this.loggedIn ? decodeURI(Stack.options.user.profileUrl.split('/')[5]) : undefined;
+                var $uname = sox.NEW_TOPBAR ? $('body > header > div > div.-actions > a > div.gravatar-wrapper-24') : $('body > div.topbar > div > div.topbar-links > a > div.gravatar-wrapper-24');
+                return ($uname.length ? $uname.attr('title') : false);
             }
         },
         get loggedIn() {
-            return Stack ? Stack.options.user.isRegistered : undefined;
+            return sox.exists('options.user.isRegistered') ? Stack.options.user.isRegistered : undefined;
         },
         hasPrivilege: function(privilege) {
             if (this.loggedIn) {
