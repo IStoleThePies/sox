@@ -78,12 +78,12 @@
             $.ajax({
                 url: url
             }).success(function(data) {
-                for (var i = 0, len = data.items.length; i < len; i++) {
+                for (var i = 0; i < data.items.length; i++) {
                     var userId = data.items[i].user_id,
                         isEmployee = data.items[i].is_employee;
 
                     if (isEmployee) {
-                        $links.filter('a[href^="/users/' + userId + '/"]').after('<i class="fa fa-stack-overflow" title="employee" style="padding: 0 5px"></i>');
+                        $links.filter('a[href^="/users/' + userId + '/"]').after('<span class="fa fa-stack-overflow" title="employee" style="padding: 0 5px; color: ' + $('.mod-flair').css('color') + '"></span>');
                     }
                 }
             });
@@ -496,7 +496,7 @@
                 var link = $('.share-tip input').val(),
                     title = $('meta[name="twitter:title"]').attr('content').replace(/\[(.*?)\]/g, '($1)'); //https://github.com/soscripted/sox/issues/226
 
-                if (link.match(title)) return; //don't do anything if the function's already done its thing
+                if (link.indexOf(title) !== -1) return; //don't do anything if the function's already done its thing
                 $('.share-tip input').val('[' + title + '](' + link + ')');
                 $('.share-tip input').select();
                 document.execCommand('copy'); //https://github.com/soscripted/sox/issues/177
@@ -567,7 +567,7 @@
                     if (!$(this).find('.soxReplyLink').length) { //if the link doesn't already exist
                         if ($('.topbar-links a span:eq(0)').text() != $(this).find('.comment-text a.comment-user').text()) { //make sure the link is not added to your own comments
                             $(this).find('.comment-text').css('overflow-x', 'hidden');
-                            $(this).append('<span class="soxReplyLink" title="reply to this user">&crarr;</span>');
+                            $(this).append('<span class="soxReplyLink" title="reply to this user" style="margin-left: -7px">&crarr;</span>');
                         }
                     }
                 });
@@ -1341,7 +1341,10 @@ Toggle SBS?</div></li>';
                         return;
                     }
 
+                    sox.debug('addAuthorNameToInboxNotifications: ', $node, id, apiurl);
+
                     $.getJSON(apiurl, function(json) {
+                        sox.debug('addAuthorNameToInboxNotifications JSON returned from API', json);
                         if (json.items.length) {
                             var author = (type === 'edit suggested' || link.indexOf('/suggested-edits/') > -1 ? json.items[0].proposing_user.display_name : json.items[0].owner.display_name),
                                 $author = $('<span/>', {
@@ -2261,11 +2264,15 @@ Toggle SBS?</div></li>';
                         sox.debug('quickAuthorInfo addLastSeen(): userdetailscurrent id', userDetailsFromAPI[id]);
                         if (userDetailsFromAPI[id] && !$(this).find('.sox-last-seen').length) {
                             var lastSeenDate = new Date(userDetailsFromAPI[id].last_seen);
-                            $(this).find('.post-signature').last().append(
-                                "<i class='fa fa-clock-o'></i>&nbsp;<time class='timeago sox-last-seen' datetime='" +
+                            var type = '';
+                            if (userDetailsFromAPI[id].type === 'unregistered') {
+                                type = ' (unregistered)';
+                            }
+                            $(this).find('.user-info').last().append(
+                                "<div style='color: #848d95; font-size: 12.5px; padding-top: 38px'><i class='fa fa-clock-o'></i>&nbsp;<time class='timeago sox-last-seen' datetime='" +
                                 lastSeenDate.toISOString() + "' title='" + //datetime
                                 lastSeenDate.toJSON().replace('T', ' ').replace('.000', '') + "'>" + //title, https://github.com/soscripted/sox/issues/204 hacky but short way '.000' always works because SE doesn't do such precise times
-                                lastSeenDate.toLocaleString() + "</time>, " + userDetailsFromAPI[id].type //contents of tag
+                                lastSeenDate.toLocaleString() + "</time>" + type //contents of tag
                             );
                         }
                     }
