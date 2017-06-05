@@ -10,7 +10,7 @@
             "name": "regionalTimestamps",
             "desc": "Convert timestamps to your local time",
             "extended_description": "Displays timestamps based on your timezone. You can also display time in 12-hour format by checking the option.",
-            "meta": "http://meta.stackexchange.com/questions/101385/should-the-top-navigation-be-frozen-optional",
+            "meta": "",
             "match": "",
             "exclude": "",
             "settings": [{
