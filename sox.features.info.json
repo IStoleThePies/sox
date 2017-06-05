@@ -25,18 +25,6 @@
             "match": "*://*.com/search*",
             "exclude": ""
         }, {
-            "name": "regionalTimestamps",
-            "desc": "Add regional timestamps",
-            "extended_description": "Locks the topbar to the top of the window so you can see it at all times, even when scrolling down. Disabled on Ask Ubuntu due to the different styling of the topbar.",
-            "meta": "http://meta.stackexchange.com/questions/101385/should-the-top-navigation-be-frozen-optional",
-            "match": "",
-            "exclude": "",
-            "settings": [{
-                "id": "twelveHours",
-                "type": "checkbox",
-                "desc": "Use 12-hour format?"
-            }
-        ]}, {
             "name": "betterCSS",
             "desc": "Add extra CSS for voting signs and favourite button (currently only on Android SE)",
             "meta": "http://meta.stackexchange.com/questions/252685/i-want-to-have-those-voting-animations-like-on-android-se-pretty-please",
