@@ -25,6 +25,13 @@
             "match": "*://*.com/search*",
             "exclude": ""
         }, {
+            "name": "regionalTimestamps",
+            "desc": "Add regional timestamps",
+            "extended_description": "If the question you are currently viewing is HOT, a flame icon is added next to the title",
+            "meta": "http://meta.stackexchange.com/questions/245390/let-mods-and-10k-know-when-questions-go-hot",
+            "match": "",
+            "exclude": ""
+        }, {
             "name": "betterCSS",
             "desc": "Add extra CSS for voting signs and favourite button (currently only on Android SE)",
             "meta": "http://meta.stackexchange.com/questions/252685/i-want-to-have-those-voting-animations-like-on-android-se-pretty-please",
