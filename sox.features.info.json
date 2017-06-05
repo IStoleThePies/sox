@@ -8,8 +8,8 @@
             "exclude": ""
         }, {
             "name": "regionalTimestamps",
-            "desc": "Add regional timestamps",
-            "extended_description": "Locks the topbar to the top of the window so you can see it at all times, even when scrolling down. Disabled on Ask Ubuntu due to the different styling of the topbar.",
+            "desc": "Convert timestamps to your local time",
+            "extended_description": "Displays timestamps based on your timezone. You can also display time in 12-hour format by checking the option.",
             "meta": "http://meta.stackexchange.com/questions/101385/should-the-top-navigation-be-frozen-optional",
             "match": "",
             "exclude": "",
