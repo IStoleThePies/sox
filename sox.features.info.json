@@ -31,6 +31,12 @@
             "meta": "http://meta.stackexchange.com/questions/245390/let-mods-and-10k-know-when-questions-go-hot",
             "match": "",
             "exclude": ""
+            "settings": [{
+                "id": "twelveHours",
+                "type": "checkbox",
+                "desc": "Words to block from titles (comma-separated)"
+            }
+            }]
         }, {
             "name": "betterCSS",
             "desc": "Add extra CSS for voting signs and favourite button (currently only on Android SE)",
