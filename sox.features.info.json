@@ -7,6 +7,18 @@
             "match": "",
             "exclude": ""
         }, {
+            "name": "regionalTimestamps",
+            "desc": "Add regional timestamps",
+            "extended_description": "Locks the topbar to the top of the window so you can see it at all times, even when scrolling down. Disabled on Ask Ubuntu due to the different styling of the topbar.",
+            "meta": "http://meta.stackexchange.com/questions/101385/should-the-top-navigation-be-frozen-optional",
+            "match": "",
+            "exclude": "",
+            "settings": [{
+                "id": "twelveHours",
+                "type": "checkbox",
+                "desc": "Use 12-hour format?"
+            }]
+         }, {
             "name": "addEllipsis",
             "desc": "Add ellipsis to long names",
             "meta": "http://meta.stackexchange.com/questions/244729/provide-an-ellipsis-after-a-long-name-instead-of-truncating-it",
